@@ -48,6 +48,7 @@ function parse(options) {
 		var promises = [];
 
 		tree.match(match('module[href]'), function (node) {
+			const {href, class: classAttr = '', 'data-href': dataHref, ...attrs} = node.attrs
 			promises.push(
 				readFile(options, node.attrs.href)
 					.then(processNodeContentWithPosthtml(node, options))
@@ -56,6 +57,22 @@ function parse(options) {
 							from: path.join(path.dirname(options.from), node.attrs.href)
 						}))(tree);
 					}).then(function (content) { // remove <module> tag and set inner content
+						if (content[0].attrs && classAttr !== '') {
+              content[0].attrs.class = content[0].attrs.class
+                ? `${content[0].attrs.class} ${classAttr}`
+                : classAttr
+						}
+
+						if (content[0].attrs) {
+							content[0].attrs = {...content[0].attrs, ...attrs}
+						} else {
+							content[0].attrs = attrs
+						}
+
+						if (dataHref) {
+							content[0].attrs.href = dataHref
+						}
+
 						node.tag = false;
 						node.content = content;
 					})
